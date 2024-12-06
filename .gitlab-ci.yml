@@ -1,0 +1,14 @@
+# .gitlab-ci.yml
+
+stages:
+  - release
+
+release:
+  image: goreleaser/goreleaser
+  stage: release
+  script:
+    - goreleaser release --rm-dist
+  only:
+    - tags
+  before_script:
+    - apt-get update && apt-get install -y git
