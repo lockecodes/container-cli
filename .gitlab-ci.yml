@@ -1,14 +1,14 @@
-# .gitlab-ci.yml
-
 stages:
   - release
 
 release:
-  image: goreleaser/goreleaser
   stage: release
+  image:
+    name: goreleaser/goreleaser
+    entrypoint: [""]
+  variables:
+    # Disable shallow cloning so that goreleaser can diff between tags to
+    # generate a changelog.
+    GIT_DEPTH: 0
   script:
-    - goreleaser release --rm-dist
-  only:
-    - tags
-  before_script:
-    - apt-get update && apt-get install -y git
+    - goreleaser release

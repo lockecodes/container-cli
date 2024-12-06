@@ -24,6 +24,9 @@ release:
     owner: locke-codes
     name: container_cli
 
+gitlab_urls:
+  use_package_registry: true
+
 # Build settings
 builds:
   - id: default
