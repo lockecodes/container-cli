@@ -16,7 +16,7 @@ before:
     - go generate ./...
 
 # Configuration file for GoReleaser
-project_name: container_cli
+project_name: container-cli
 
 # Build settings
 builds:
