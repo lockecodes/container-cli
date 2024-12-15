@@ -1,4 +1,4 @@
-module github.com/locke-codes/container_cli
+module gitlab.com/locke-codes/container-cli
 
 go 1.23
 

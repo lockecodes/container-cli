@@ -3,6 +3,7 @@ package update
 import (
 	"encoding/json"
 	"fmt"
+	"gitlab.com/locke-codes/container-cli/internal/archiver"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"io"
@@ -134,11 +135,11 @@ func getReleaseDownloadLink(release Release) (string, string, error) {
 	return "", "", fmt.Errorf("no matching asset found for OS: %s, Arch: %s", runtime_os, arch)
 }
 
-func Update() {
+func DownloadBinary(destinationPath string) (string, string, error) {
 	latestRelease, err := getLatestRelease()
 	if err != nil {
 		fmt.Println("Error fetching latest release:", err)
-		return
+		return "", "", err
 	}
 
 	fmt.Println("Latest GitLab Release Tag:", latestRelease.TagName)
@@ -146,16 +147,151 @@ func Update() {
 	link, name, err := getReleaseDownloadLink(latestRelease)
 	if err != nil {
 		fmt.Println("Error:", err)
+		return "", "", err
 	}
 	// Construct the download URL and file path
-	destPath := filepath.Join(".", name)
+	destPath := filepath.Join(destinationPath, name)
 
 	fmt.Println("Downloading binary from:", link)
 
 	if err := downloadFile(link, destPath); err != nil {
 		fmt.Println("Error downloading binary:", err)
-		return
+		return "", "", err
 	}
 
 	fmt.Println("Downloaded binary to:", destPath)
+	return destPath, latestRelease.TagName, nil
+}
+
+func Update() {
+	_, _, err := DownloadBinary(".")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func Install() error {
+	binaryPath, tagName, err := DownloadBinary("/tmp")
+	if err != nil {
+		return err
+	}
+	err = InstallBinary(binaryPath, "container-cli", tagName)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// InstallBinary extracts an archive and installs the binary into a versioned folder with a symlink.
+// - Symlink `~/.local/bin/ccli` always points to the latest version.
+// - Additionally, `/usr/local/bin/ccli` is symlinked to `~/.local/bin/ccli` for global access.
+// Parameters:
+// - `source` is the path to the archive file (e.g., `.tar.gz` or `.zip`).
+// - `binaryName` is the name of the binary file in the archive (e.g., "ccli").
+// - `version` version of the binary
+func InstallBinary(source, binaryName string, version string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+
+	// Define paths
+	baseDir := filepath.Join(homeDir, ".local", "bin")
+	versionDir := filepath.Join(baseDir, "container-cli", version)
+	localSymlinkPath := filepath.Join(baseDir, "ccli")
+	globalSymlinkPath := filepath.Join("/usr/local/bin", "ccli")
+
+	// Step 1: Extract the archive
+	fmt.Printf("Extracting %s...\n", source)
+	if err := archiver.ExtractArchive(source, versionDir); err != nil {
+		return fmt.Errorf("failed to extract archive: %v", err)
+	}
+
+	// Step 2: Locate the binary file
+	fmt.Println("Locating the binary...")
+	binaryPath, err := findBinary(versionDir, binaryName)
+	if err != nil {
+		return fmt.Errorf("failed to locate binary %s: %v", binaryName, err)
+	}
+
+	// Step 3: Move the binary to the versioned folder
+	fmt.Println("Installing the binary...")
+	finalBinaryPath := filepath.Join(versionDir, binaryName)
+	if err := os.Rename(binaryPath, finalBinaryPath); err != nil {
+		return fmt.Errorf("failed to move binary to versioned directory: %v", err)
+	}
+
+	// Make the binary executable
+	if err := os.Chmod(finalBinaryPath, 0755); err != nil {
+		return fmt.Errorf("failed to make binary executable: %v", err)
+	}
+
+	// Step 4: Create/update the symlink in ~/.local/bin
+	fmt.Println("Updating local symlink...")
+	if err := updateSymlink(finalBinaryPath, localSymlinkPath); err != nil {
+		return fmt.Errorf("failed to update local symlink: %v", err)
+	}
+
+	// Step 5: Create/update the global symlink in /usr/local/bin
+	fmt.Println("Updating global symlink...")
+	// For now just output the command for the symlink. If the user already has
+	// ~/.local/bin in path then it should already work
+	fmt.Println("You must either ensure that ~/.local/bin is in your path or run the following command:")
+	fmt.Printf("sudo ln -s %s %s\n", localSymlinkPath, globalSymlinkPath)
+	//if err := updateSymlink(localSymlinkPath, globalSymlinkPath); err != nil {
+	//	return fmt.Errorf("failed to update global symlink: %v", err)
+	//}
+
+	fmt.Println("Installation successful!")
+	return nil
+}
+
+// findBinary searches for the binary file in the extracted directory
+func findBinary(directory, binaryName string) (string, error) {
+	var binaryPath string
+	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// Match the binary name
+		if info.Mode().IsRegular() && info.Name() == binaryName {
+			binaryPath = path
+			return filepath.SkipDir // Stop searching once found
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	if binaryPath == "" {
+		return "", fmt.Errorf("binary %s not found in extracted files", binaryName)
+	}
+	return binaryPath, nil
+}
+
+// updateSymlink updates the symlink to point to the latest target.
+// - `target` is the file for the symlink to point to.
+// - `symlinkPath` is the path where the symlink should be created.
+func updateSymlink(target, symlinkPath string) error {
+	// Remove the symlink if it already exists
+	if _, err := os.Lstat(symlinkPath); err == nil {
+		if err := os.Remove(symlinkPath); err != nil {
+			return fmt.Errorf("failed to remove existing symlink: %v", err)
+		}
+	}
+
+	// Create the new symlink
+	if err := os.Symlink(target, symlinkPath); err != nil {
+		return fmt.Errorf("failed to create symlink: %v", err)
+	}
+
+	// Verify the symlink
+	resolvedPath, err := os.Readlink(symlinkPath)
+	if err != nil {
+		return fmt.Errorf("failed to verify symlink: %v", err)
+	}
+	if resolvedPath != target {
+		return fmt.Errorf("symlink was not set correctly: expected %s, got %s", target, resolvedPath)
+	}
+
+	return nil
 }
