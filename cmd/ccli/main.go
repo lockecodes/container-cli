@@ -3,13 +3,44 @@ package main
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
-	"gitlab.com/locke-codes/container-cli/internal/update"
+	"gitlab.com/locke-codes/go-binary-updater/pkg/release"
 	"log"
 	"os"
 )
 
 // version will be set during build
 var version string
+var releaseObj release.Release
+
+const projectId int = 47137983
+
+func install() error {
+	fileConfig := release.FileConfig{
+		VersionedDirectoryName: "container-cli",
+		SourceBinaryName:       "container-cli",
+		BinaryName:             "ccli",
+		CreateGlobalSymlink:    false, // This isn't ready for use yet
+	}
+
+	// Use GitLab implementation
+	releaseObj = release.NewGitlabRelease(
+		projectId, // Ensure projectId matches the expected type
+		fileConfig,
+	)
+	err := releaseObj.GetLatestRelease()
+	if err != nil {
+		return err
+	}
+	err = releaseObj.DownloadLatestRelease()
+	if err != nil {
+		return err
+	}
+	err = releaseObj.InstallLatestRelease()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // main is the entry point of the application. It sets up the CLI interface with app configuration, commands, and flags.
 func main() {
@@ -21,19 +52,14 @@ func main() {
 				Name:  "install",
 				Usage: "Install the ccli binary",
 				Action: func(c *cli.Context) error {
-					err := update.Install()
-					if err != nil {
-						return err
-					}
-					return nil
+					return install()
 				},
 			},
 			{
 				Name:  "update",
 				Usage: "Update to the latest version of the CLI",
 				Action: func(c *cli.Context) error {
-					update.Update()
-					return nil
+					return install()
 				},
 			},
 			{
@@ -50,8 +76,4 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func GetVersion() string {
-	return version
 }
