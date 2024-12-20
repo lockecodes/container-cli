@@ -3,23 +3,35 @@ package main
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
+	"gitlab.com/locke-codes/go-binary-updater/pkg/fileUtils"
 	"gitlab.com/locke-codes/go-binary-updater/pkg/release"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 )
 
 // version will be set during build
 var version string
 var releaseObj release.Release
 
-const projectId int = 47137983
+const projectId string = "47137983"
 
 func install() error {
-	fileConfig := release.FileConfig{
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %v", err)
+	}
+
+	// Define paths
+	baseDir := filepath.Join(homeDir, ".local", "bin")
+	fileConfig := fileUtils.FileConfig{
 		VersionedDirectoryName: "container-cli",
 		SourceBinaryName:       "container-cli",
 		BinaryName:             "ccli",
 		CreateGlobalSymlink:    false, // This isn't ready for use yet
+		BaseBinaryDirectory:    baseDir,
+		SourceArchivePath:      path.Join("/tmp", "container-cli.tar.gz"),
 	}
 
 	// Use GitLab implementation
@@ -27,7 +39,7 @@ func install() error {
 		projectId, // Ensure projectId matches the expected type
 		fileConfig,
 	)
-	err := releaseObj.GetLatestRelease()
+	err = releaseObj.GetLatestRelease()
 	if err != nil {
 		return err
 	}

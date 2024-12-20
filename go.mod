@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/urfave/cli/v2 v2.27.5
-	gitlab.com/locke-codes/go-binary-updater v0.1.2
+	gitlab.com/locke-codes/go-binary-updater v0.1.5
 )
 
 require (
