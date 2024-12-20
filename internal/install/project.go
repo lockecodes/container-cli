@@ -6,6 +6,7 @@ import (
 	"gitlab.com/locke-codes/container-cli/internal/gitter"
 	"gitlab.com/locke-codes/container-cli/internal/utils"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 )
@@ -16,8 +17,12 @@ type Project struct {
 	DestinationDirectory string
 }
 
+func (p *Project) Path() string {
+	return path.Join(p.DestinationDirectory, p.Name)
+}
+
 func (p *Project) Clone() error {
-	client := gitter.NewGitter(p.Name, p.URL, path.Join(p.DestinationDirectory, p.Name))
+	client := gitter.NewGitter(p.Name, p.URL, p.Path())
 	err := client.Clone()
 	if err != nil {
 		return err
@@ -26,8 +31,21 @@ func (p *Project) Clone() error {
 }
 
 func (p *Project) Install() error {
-	err := p.Clone()
+	err := p.Uninstall()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+	err = p.Clone()
 	return err
+}
+
+func (p *Project) Uninstall() error {
+	fmt.Printf("Removing %s\n", p.Path())
+	err := os.RemoveAll(p.Path())
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+	return nil
 }
 
 func promptName(name string) (string, error) {
