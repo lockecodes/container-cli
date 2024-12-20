@@ -1,18 +1,47 @@
 package install
 
-import "testing"
-
-//git@gitlab.com:slocke716/big-salad.git
+import (
+	"os"
+	"testing"
+)
 
 func TestCloneProject(t *testing.T) {
-	projectUrl := "ssh://git@gitlab.com/slocke716/big-salad.git"
-	project := Project{
-		Name:        "big-salad",
-		URL:         projectUrl,
-		Destination: "/tmp/big-salad",
+	type testCase struct {
+		name                 string
+		projectName          string
+		projectUrl           string
+		destinationDirectory string
+		//expected string
+		//hasError bool
 	}
-	err := project.Clone()
-	if err != nil {
-		t.Error(err)
+
+	tests := []testCase{
+		{
+			name:                 "helloworld-https",
+			projectName:          "helloworld",
+			projectUrl:           "https://github.com/fw876/helloworld.git",
+			destinationDirectory: "/tmp/helloworld",
+		},
+		{
+			name:                 "helloworld-ssh",
+			projectName:          "helloworld",
+			projectUrl:           "ssh://git@github.com/fw876/helloworld.git",
+			destinationDirectory: "/tmp/helloworld",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			project := Project{
+				Name:                 test.projectName,
+				URL:                  test.projectUrl,
+				DestinationDirectory: test.destinationDirectory,
+			}
+			os.RemoveAll(test.destinationDirectory)
+			err := project.Clone()
+			if err != nil {
+				t.Error(err)
+			}
+		})
 	}
 }
