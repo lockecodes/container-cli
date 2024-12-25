@@ -35,9 +35,9 @@ This document will provide steps on installing, using, and maintaining this CLI 
 
    Example:
    ```bash
-   ccli project install -name big-salad -url ssh://git@gitlab.com/slocke716/big-salad.git -dest /home/user/projects -command salad
+   ccli project install -name big-salad -url ssh://git@gitlab.com/locke-codes/big-salad.git -dest /home/user/projects -command bs
    ```
-2. Replace `<project_name>`, `<git_url>`, `<destination_path>`, and `<command_alias>` with appropriate values.
+2. Replace `<project_name>`, `<git_url>`, `<destination_path>`, and `<command>` with appropriate values.
 
 ### Interactive Mode for Installing a New Project
 
@@ -62,7 +62,7 @@ For example, the session may look like:
 ```shell
 ❯ ccli project install
 Enter Project Name: big-salad
-Enter Git URL: ssh://git@gitlab.com/slocke716/big-salad.git
+Enter Git URL: ssh://git@gitlab.com/locke-codes/big-salad.git
 Enter Destination Path: /home/user/projects
 Enter Command: bs
 ```
@@ -113,8 +113,7 @@ Below are some of the primary commands for `ccli`:
 
 ## TODO
 
-1. Replace the example with a public repository for universal access.
-2. Add support for Docker and refactor calls currently specific to Podman.
-3. Add Makefile targets for usage during ci/cd to run tests etc. Bring back Dockerfile was it is useful
-4. Add more complete unit testing
-3. Create and include a usage demonstration video.
+1. Add support for Docker and refactor calls currently specific to Podman.
+2. Add Makefile targets for usage during ci/cd to run tests etc. Bring back Dockerfile was it is useful
+3. Add more complete unit testing 
+4. Create and include a usage demonstration video.
