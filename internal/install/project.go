@@ -58,7 +58,7 @@ func (p *Project) Install() error {
 func (p *Project) InstallScript() error {
 	// File contents
 	fileContent := fmt.Sprintf(`#!/usr/bin/env bash
-ccli run %s $*`, p.Name)
+ccli project run %s $*`, p.Name)
 
 	filePath := path.Join(globals.HomeDir, ".local/bin", p.Name)
 	// Write the file content
