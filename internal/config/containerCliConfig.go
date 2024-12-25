@@ -9,31 +9,24 @@ import (
 	"gitlab.com/locke-codes/container-cli/internal/globals"
 	"gitlab.com/locke-codes/container-cli/internal/utils"
 	"log"
-	"path"
 )
 
-type ProjectConfig struct {
-	Name           string `koanf:"name"`
-	Path           string `koanf:"path"`
-	Dockerfile     string `koanf:"dockerfile"`
-	BuildDirectory string `koanf:"buildDirectory"`
-	BuildContext   string `koanf:"buildContext"`
-	DefaultCommand string `koanf:"defaultCommand"`
-}
-
+// ContainerCliConfig represents the configuration for the container CLI, including engine, path, and project details.
 type ContainerCliConfig struct {
 	ContainerEngine string          `koanf:"containerEngine"`
 	Path            string          `koanf:"path"`
 	Projects        []ProjectConfig `koanf:"projects"`
 }
 
-// Global koanf instance. Use "." as the key path delimiter. This can be "/" or any character.
 var (
+	// Global koanf instance. Use "." as the key path delimiter. This can be "/" or any character.
 	k      = koanf.New(".")
 	parser = yaml.Parser()
 	err    error
 )
 
+// NewContainerCliConfig initializes a default configuration for the container CLI and loads the default settings
+// directly into koanf
 func NewContainerCliConfig() *ContainerCliConfig {
 	configFile := ContainerCliConfig{
 		ContainerEngine: "podman",
@@ -44,6 +37,7 @@ func NewContainerCliConfig() *ContainerCliConfig {
 	return &configFile
 }
 
+// KoanfLoad loads the ContainerCliConfig struct into the global koanf instance using the "koanf" struct tags.
 func (c *ContainerCliConfig) KoanfLoad() {
 	_ = k.Load(structs.Provider(c, "koanf"), nil)
 }
@@ -51,6 +45,7 @@ func (c *ContainerCliConfig) KoanfLoad() {
 // LoadConfig reads a YAML file specified by filename and unmarshals its content into a ContainerCliConfig struct.
 // It returns the loaded ContainerCliConfig and any error encountered during the file reading or unmarshalling process.
 func (c *ContainerCliConfig) LoadConfig() error {
+	// If the config file doesn't exist, just return
 	if !utils.FileExists(c.Path) {
 		return nil
 	}
@@ -69,8 +64,10 @@ func (c *ContainerCliConfig) LoadConfig() error {
 	return nil
 }
 
+// SaveConfig saves the ContainerCliConfig instance to a file in YAML format by marshalling it and writing to the
+// specified path.
 func (c *ContainerCliConfig) SaveConfig() error {
-	// Marshal the instance back to JSON.
+	// Marshal the instance back to YAML.
 	// Load default values using the structs provider.
 	// We provide a struct along with the struct tag `koanf` to the
 	// provider.
@@ -88,6 +85,8 @@ func (c *ContainerCliConfig) SaveConfig() error {
 	return nil
 }
 
+// GetProject retrieves the ProjectConfig for the given project name from the ContainerCliConfig.
+// Returns nil if the project is not found.
 func (c *ContainerCliConfig) GetProject(name string) *ProjectConfig {
 	for _, project := range c.Projects {
 		if project.Name == name {
@@ -97,18 +96,10 @@ func (c *ContainerCliConfig) GetProject(name string) *ProjectConfig {
 	return nil
 }
 
-// Helper function to copy a slice
-func copySlice(original []ProjectConfig) []ProjectConfig {
-	// Create a new slice with the same length as the original
-	copied := make([]ProjectConfig, len(original))
-	copy(copied, original) // Copies the data from the original slice to the new slice
-	return copied
-}
-
 // ReplaceProjectByName replaces a person in the slice by their name
 func (c *ContainerCliConfig) ReplaceProjectByName(name string, newProject ProjectConfig) error {
 	fmt.Printf("Replacing project %s with %s\n", name, newProject.Name)
-	projectList := copySlice(c.Projects)
+	projectList := utils.CopySlice(c.Projects)
 	for i, project := range projectList {
 		if project.Name == name {
 			c.Projects[i] = newProject
@@ -118,42 +109,11 @@ func (c *ContainerCliConfig) ReplaceProjectByName(name string, newProject Projec
 	return fmt.Errorf("project with name %s not found", name)
 }
 
+// GetProjectPath returns the file system path of the specified project name if found, otherwise it returns an empty string.
 func (c *ContainerCliConfig) GetProjectPath(name string) string {
 	project := c.GetProject(name)
 	if project != nil {
 		return project.Path
-	}
-	return ""
-}
-
-func (c *ContainerCliConfig) GetProjectBuildContext(name string) string {
-	project := c.GetProject(name)
-	if project != nil {
-		return project.BuildContext
-	}
-	return ""
-}
-
-func (c *ContainerCliConfig) GetProjectBuildDirectory(name string) string {
-	project := c.GetProject(name)
-	if project != nil {
-		return project.BuildDirectory
-	}
-	return ""
-}
-
-func (c *ContainerCliConfig) GetProjectDockerfile(name string) string {
-	project := c.GetProject(name)
-	if project != nil {
-		return project.Dockerfile
-	}
-	return ""
-}
-
-func (c *ContainerCliConfig) GetProjectDockerfilePath(name string) string {
-	project := c.GetProject(name)
-	if project != nil {
-		return path.Join(project.Path, project.Dockerfile)
 	}
 	return ""
 }

@@ -5,6 +5,7 @@ import (
 	"net/url"
 )
 
+// Gitter represents a structure for managing Git operations with a repository URL and destination path.
 type Gitter struct {
 	Name        string
 	Url         *url.URL
@@ -12,6 +13,8 @@ type Gitter struct {
 	_client     getter.GitGetter
 }
 
+// NewGitter creates and returns a new Gitter instance initialized with the provided name, Git repository URL,
+// and destination path.
 func NewGitter(name, gitUrl, destination string) *Gitter {
 	thisUrl, err := url.Parse(gitUrl)
 	if err != nil {
@@ -25,6 +28,7 @@ func NewGitter(name, gitUrl, destination string) *Gitter {
 	}
 }
 
+// Clone retrieves the repository from the configured URL and stores it in the destination directory.
 func (g *Gitter) Clone() error {
 	err := g._client.Get(g.Destination, g.Url)
 	if err != nil {

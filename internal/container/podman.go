@@ -15,6 +15,7 @@ import (
 
 //const PODMAN_URI = "unix:/run/user/1000/podman/podman.sock"
 
+// Podman represents configuration and attributes for managing Podman container builds and runtime settings.
 type Podman struct {
 	BuildContext              string
 	BuildDirectory            string
@@ -28,6 +29,7 @@ type Podman struct {
 	DefaultCommand            string
 }
 
+// Build builds a Podman image using the specified Dockerfile, image name, and build context.
 func (p Podman) Build() error {
 	// build using shell for now
 	// come back and use go for this later...maybe...
@@ -38,6 +40,8 @@ func (p Podman) Build() error {
 	return nil
 }
 
+// Stop attempts to stop a running Podman container associated with the current instance configuration.
+// Currently not implemented since we are not executing containers directly yet
 func (p Podman) Stop() error {
 	panic("implement me")
 }
@@ -102,6 +106,7 @@ func (p Podman) Run(args []string) error {
 	return cmd.Run()
 }
 
+// NewPodman initializes and returns a Podman container object configured with the given project settings.
 func NewPodman(projectConfig *config.ProjectConfig) Container {
 	workingDir, err := os.Getwd() // Returns the directory from where the program is invoked
 	if err != nil {
@@ -111,12 +116,12 @@ func NewPodman(projectConfig *config.ProjectConfig) Container {
 	return Podman{
 		BuildContext:              projectConfig.BuildContext,
 		BuildDirectory:            projectConfig.BuildDirectory,
-		ContextDirectoryContainer: globals.CONTEXT_DIRECTORY_CONTAINER,
+		ContextDirectoryContainer: globals.ContextDirectoryContainer,
 		ContextDirectoryHost:      workingDir,
 		Dockerfile:                projectConfig.Dockerfile,
 		ImageName:                 projectConfig.Name,
 		ImageTag:                  "latest",
-		UserHomeContainer:         globals.USER_HOME_CONTAINER,
+		UserHomeContainer:         globals.UserHomeContainer,
 		UserHomeHost:              homeDir,
 		DefaultCommand:            projectConfig.DefaultCommand,
 	}

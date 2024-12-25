@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// ExpandPath replaces a leading '~' in the path with the user's home directory and returns the expanded path.
+// Returns an error if the home directory cannot be determined.
 func ExpandPath(path string) (string, error) {
 	// Check if the path starts with ~
 	if strings.HasPrefix(path, "~") {
@@ -64,4 +66,12 @@ func FileExists(path string) bool {
 
 	// Check if the found path is actually a file and not a directory
 	return !info.IsDir()
+}
+
+// CopySlice Helper function to copy a slice of any type
+func CopySlice[T any](original []T) []T {
+	// Create a new slice with the same length as the original
+	copied := make([]T, len(original))
+	copy(copied, original) // Copies the data from the original slice to the new slice
+	return copied
 }

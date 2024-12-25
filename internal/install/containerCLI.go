@@ -10,9 +10,11 @@ import (
 	"path/filepath"
 )
 
+// releaseObj represents an instance of the release.Release interface used for managing release lifecycle operations.
 var releaseObj release.Release
 var err error
 
+// ContainerCLI handles the installation and configuration process for the Container CLI, including release management.
 func ContainerCLI() error {
 	// Define paths
 	baseDir := filepath.Join(globals.HomeDir, ".local", "bin")
