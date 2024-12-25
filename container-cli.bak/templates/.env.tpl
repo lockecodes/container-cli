@@ -1,3 +1,0 @@
-VERSION=latest
-CONTEXT_DIR=./
-USER_HOME=~
