@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/manifoldco/promptui"
 	"gitlab.com/locke-codes/container-cli/internal/config"
+	"gitlab.com/locke-codes/container-cli/internal/container"
 	"gitlab.com/locke-codes/container-cli/internal/gitter"
 	"gitlab.com/locke-codes/container-cli/internal/globals"
 	"gitlab.com/locke-codes/container-cli/internal/utils"
@@ -56,9 +57,20 @@ func (p *Project) Install() error {
 }
 
 func (p *Project) InstallScript() error {
+	projectConfig := config.ProjectConfig{
+		Name:           p.Name,
+		Path:           p.Path(),
+		Dockerfile:     path.Join(p.Path(), "Dockerfile"),
+		BuildDirectory: p.Path(),
+		BuildContext:   p.Path(),
+		DefaultCommand: p.DefaultCommand,
+	}
+	containerObj := container.NewPodman(&projectConfig)
+	runCmd := containerObj.GetRunCommand()
+	commandStr := fmt.Sprintf("podman %s", strings.Join(runCmd, " "))
 	// File contents
 	fileContent := fmt.Sprintf(`#!/usr/bin/env bash
-ccli project run %s $*`, p.Name)
+%s $*`, commandStr)
 
 	filePath := path.Join(globals.HomeDir, ".local/bin", p.Name)
 	// Write the file content

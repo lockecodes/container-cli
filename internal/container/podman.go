@@ -42,8 +42,8 @@ func (p Podman) Stop() error {
 	panic("implement me")
 }
 
-// Run generates and executes a `podman run` command with the given environment variables and volumes.
-func (p Podman) Run(args []string) error {
+// GetRunCommand returns the command used for running the application
+func (p Podman) GetRunCommand() []string {
 	// Define environment variables
 	envVars := map[string]string{
 		"CONTEXT_DIR": p.ContextDirectoryContainer,
@@ -79,11 +79,19 @@ func (p Podman) Run(args []string) error {
 
 	// Specify the image to run
 	cmdArgs = append(cmdArgs, p.ImageName, p.DefaultCommand)
-	cmdArgs = append(cmdArgs, args...)
 
 	// Print the full command for logging or debugging
 	commandStr := fmt.Sprintf("podman %s", strings.Join(cmdArgs, " "))
 	fmt.Println("Generated Command:", commandStr)
+
+	return cmdArgs
+}
+
+// Run generates and executes a `podman run` command with the given environment variables and volumes.
+func (p Podman) Run(args []string) error {
+	// Print the full command for logging or debugging
+	cmdArgs := p.GetRunCommand()
+	cmdArgs = append(cmdArgs, args...)
 
 	// Execute the command
 	cmd := exec.Command("podman", cmdArgs...)

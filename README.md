@@ -38,11 +38,6 @@ GLOBAL OPTIONS:
 ```
 
 # TODO
-TODO: Fix flag usage
-```shell
-❯ big-salad --help
-2024/12/24 22:14:35 No help topic for 'big-salad'
-```
-
 TODO: Replace the example with a public repository for others
+TODO: Support Docker and update calls that are explicit for Podman
 
