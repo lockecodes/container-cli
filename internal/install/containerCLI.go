@@ -1,26 +1,21 @@
 package install
 
 import (
-	"fmt"
+	"gitlab.com/locke-codes/container-cli/internal/config"
+	"gitlab.com/locke-codes/container-cli/internal/globals"
+	"gitlab.com/locke-codes/container-cli/internal/utils"
 	"gitlab.com/locke-codes/go-binary-updater/pkg/fileUtils"
 	"gitlab.com/locke-codes/go-binary-updater/pkg/release"
-	"os"
 	"path"
 	"path/filepath"
 )
 
 var releaseObj release.Release
-
-const projectId string = "47137983"
+var err error
 
 func ContainerCLI() error {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to get user home directory: %v", err)
-	}
-
 	// Define paths
-	baseDir := filepath.Join(homeDir, ".local", "bin")
+	baseDir := filepath.Join(globals.HomeDir, ".local", "bin")
 	fileConfig := fileUtils.FileConfig{
 		VersionedDirectoryName: "container-cli",
 		SourceBinaryName:       "container-cli",
@@ -32,7 +27,7 @@ func ContainerCLI() error {
 
 	// Use GitLab implementation
 	releaseObj = release.NewGitlabRelease(
-		projectId, // Ensure projectId matches the expected type
+		globals.ProjectId, // Ensure projectId matches the expected type
 		fileConfig,
 	)
 	err = releaseObj.GetLatestRelease()
@@ -46,6 +41,15 @@ func ContainerCLI() error {
 	err = releaseObj.InstallLatestRelease()
 	if err != nil {
 		return err
+	}
+
+	configFile := config.NewContainerCliConfig()
+	err = configFile.LoadConfig()
+	if !utils.FileExists(globals.DefaultContainerCliConfigPath) {
+		err = configFile.SaveConfig()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

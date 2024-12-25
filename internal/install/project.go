@@ -3,7 +3,9 @@ package install
 import (
 	"fmt"
 	"github.com/manifoldco/promptui"
+	"gitlab.com/locke-codes/container-cli/internal/config"
 	"gitlab.com/locke-codes/container-cli/internal/gitter"
+	"gitlab.com/locke-codes/container-cli/internal/globals"
 	"gitlab.com/locke-codes/container-cli/internal/utils"
 	"net/url"
 	"os"
@@ -15,6 +17,7 @@ type Project struct {
 	Name                 string
 	URL                  string
 	DestinationDirectory string
+	DefaultCommand       string
 }
 
 func (p *Project) Path() string {
@@ -22,6 +25,7 @@ func (p *Project) Path() string {
 }
 
 func (p *Project) Clone() error {
+	fmt.Printf("Cloning %s\n", p.URL)
 	client := gitter.NewGitter(p.Name, p.URL, p.Path())
 	err := client.Clone()
 	if err != nil {
@@ -31,12 +35,78 @@ func (p *Project) Clone() error {
 }
 
 func (p *Project) Install() error {
+	fmt.Printf("Installing %s\n", p.Name)
 	err := p.Uninstall()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 	err = p.Clone()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+	err = p.InstallConfig()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+	err = p.InstallScript()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
 	return err
+}
+
+func (p *Project) InstallScript() error {
+	// File contents
+	fileContent := fmt.Sprintf(`#!/usr/bin/env bash
+ccli run %s $*`, p.Name)
+
+	filePath := path.Join(globals.HomeDir, ".local/bin", p.Name)
+	// Write the file content
+	err = os.WriteFile(filePath, []byte(fileContent), 0755)
+	if err != nil {
+		fmt.Println("Error writing file:", err)
+		return err
+	}
+
+	// Make the file executable
+	err = os.Chmod(filePath, 0755)
+	if err != nil {
+		fmt.Println("Error setting executable permissions:", err)
+		return err
+	}
+
+	fmt.Printf("Script created and made executable at: %s\n", filePath)
+	return nil
+}
+
+func (p *Project) InstallConfig() error {
+	fmt.Printf("Installing config for %s\n", p.Name)
+	configFile := config.NewContainerCliConfig()
+	err = configFile.LoadConfig()
+	existingProject := configFile.GetProject(p.Name)
+	projectConfig := config.ProjectConfig{
+		Name:           p.Name,
+		Path:           p.Path(),
+		Dockerfile:     path.Join(p.Path(), "Dockerfile"),
+		BuildDirectory: p.Path(),
+		BuildContext:   p.Path(),
+		DefaultCommand: p.DefaultCommand,
+	}
+	if existingProject == nil {
+		configFile.Projects = append(configFile.Projects, projectConfig)
+	} else {
+		fmt.Printf("Project %s already exists\n", p.Name)
+		err := configFile.ReplaceProjectByName(p.Name, projectConfig)
+		if err != nil {
+			return err
+		}
+	}
+	configFile.KoanfLoad()
+	err := configFile.SaveConfig()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *Project) Uninstall() error {
@@ -76,6 +146,36 @@ func promptName(name string) (string, error) {
 	}
 
 	return name, nil
+}
+
+func promptCommand(command string) (string, error) {
+	var err error
+
+	validate := func(input string) error {
+		chars := "!@#*+$&%\\/=~ \t\n"
+
+		contains := strings.ContainsAny(input, chars)
+		if contains {
+			return fmt.Errorf("invalid command containers: %s", chars)
+		}
+		return nil
+	}
+
+	if command == "" {
+		prompt := promptui.Prompt{
+			Label:    "Command",
+			Validate: validate,
+		}
+
+		command, err = prompt.Run()
+		if err != nil {
+			return "", fmt.Errorf("Prompt failed %v\n", err)
+		}
+	} else {
+		return command, validate(command)
+	}
+
+	return command, nil
 }
 
 func promptUrl(projectUrl string) (string, error) {
@@ -168,8 +268,13 @@ func NewProject(args map[string]string) *Project {
 	name := args["name"]
 	projectUrl := args["url"]
 	dest := args["dest"]
+	command := args["command"]
 	var err error
 	name, err = promptName(name)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+	command, err = promptCommand(command)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
@@ -185,5 +290,6 @@ func NewProject(args map[string]string) *Project {
 		Name:                 name,
 		URL:                  projectUrl,
 		DestinationDirectory: dest,
+		DefaultCommand:       command,
 	}
 }

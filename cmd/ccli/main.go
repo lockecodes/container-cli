@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/urfave/cli/v3"
 	"gitlab.com/locke-codes/container-cli/internal/install"
+	"gitlab.com/locke-codes/container-cli/internal/run"
 	"log"
 	"os"
 )
@@ -53,12 +54,14 @@ func main() {
 							&cli.StringFlag{Name: "name"},
 							&cli.StringFlag{Name: "url"},
 							&cli.StringFlag{Name: "dest"},
+							&cli.StringFlag{Name: "command"},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							args := map[string]string{
-								"name": cmd.String("name"),
-								"url":  cmd.String("url"),
-								"dest": cmd.String("dest"),
+								"name":    cmd.String("name"),
+								"url":     cmd.String("url"),
+								"dest":    cmd.String("dest"),
+								"command": cmd.String("command"),
 							}
 							project := install.NewProject(args)
 							fmt.Printf("Installing project: %s\nFrom url: %s\nTo directory: %s\n", project.Name, project.URL, project.DestinationDirectory)
@@ -66,6 +69,17 @@ func main() {
 							if err != nil {
 								panic(err)
 							}
+							return nil
+						},
+					},
+					{
+						Name:      "run",
+						Usage:     "Run the project container",
+						UsageText: "ccli project run",
+						Action: func(ctx context.Context, cmd *cli.Command) error {
+							projectName := cmd.Args().First()
+							args := cmd.Args().Tail()
+							run.Run(projectName, args)
 							return nil
 						},
 					},
