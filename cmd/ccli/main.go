@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/urfave/cli/v3"
+	"gitlab.com/locke-codes/container-cli/internal/globals"
 	"gitlab.com/locke-codes/container-cli/internal/install"
 	"gitlab.com/locke-codes/container-cli/internal/run"
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 // version will be set during build
@@ -30,7 +33,22 @@ func main() {
 				Name:  "update",
 				Usage: "Update to the latest version of the CLI",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return install.ContainerCLI()
+					err := install.ContainerCLI()
+					if err != nil {
+						panic(err)
+					}
+					ccliPath := filepath.Join(globals.HomeDir, ".local", "bin", "ccli")
+					// Execute the command
+					command := exec.Command(ccliPath, "version")
+					command.Stdout = os.Stdout
+					command.Stderr = os.Stderr
+
+					// Run the command
+					err = command.Run()
+					if err != nil {
+						panic(err)
+					}
+					return nil
 				},
 			},
 			{
