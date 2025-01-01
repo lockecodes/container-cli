@@ -35,7 +35,7 @@ func main() {
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					err := install.ContainerCLI()
 					if err != nil {
-						panic(err)
+						return err
 					}
 					ccliPath := filepath.Join(globals.HomeDir, ".local", "bin", "ccli")
 					// Execute the command
@@ -46,7 +46,7 @@ func main() {
 					// Run the command
 					err = command.Run()
 					if err != nil {
-						panic(err)
+						return err
 					}
 					return nil
 				},
