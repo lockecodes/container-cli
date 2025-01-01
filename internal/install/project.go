@@ -16,10 +16,19 @@ import (
 
 // Project represents a project with a name, URL, destination directory, and a default command.
 type Project struct {
-	Name                 string
-	URL                  string
-	DestinationDirectory string
-	DefaultCommand       string
+	Name                 string // Name of the project
+	URL                  string // Repository URL
+	DestinationDirectory string // Destination for the repository
+	CommandAlias         string // CommandAlias. This will be the cli command. This defaults to Name
+	DefaultCommand       string // Command to execute in the container
+}
+
+// Alias returns the CommandAlias of the project if set; otherwise, it defaults to the project's Name.
+func (p *Project) Alias() string {
+	if p.CommandAlias != "" {
+		return p.CommandAlias
+	}
+	return p.Name
 }
 
 // Path constructs and returns the full path of the project by combining the destination directory and project name.
@@ -77,7 +86,7 @@ func (p *Project) InstallScript() error {
 	fileContent := fmt.Sprintf(`#!/usr/bin/env bash
 %s $*`, commandStr)
 
-	filePath := path.Join(globals.HomeDir, ".local/bin", p.Name)
+	filePath := path.Join(globals.HomeDir, ".local/bin", p.Alias())
 	// Write the file content
 	err = os.WriteFile(filePath, []byte(fileContent), 0755)
 	if err != nil {
@@ -109,6 +118,7 @@ func (p *Project) InstallConfig() error {
 		BuildDirectory: p.Path(),
 		BuildContext:   p.Path(),
 		DefaultCommand: p.DefaultCommand,
+		CommandAlias:   p.CommandAlias,
 	}
 	if existingProject == nil {
 		configFile.Projects = append(configFile.Projects, projectConfig)
@@ -138,24 +148,25 @@ func (p *Project) Uninstall() error {
 	return nil
 }
 
+// ValidateName checks if the provided name contains any invalid characters and returns an error if it does.
+func ValidateName(name string) error {
+	chars := "!@#*+$&%\\/=~ \t\n"
+
+	contains := strings.ContainsAny(name, chars)
+	if contains {
+		return fmt.Errorf("invalid name containers: %s", chars)
+	}
+	return nil
+}
+
 // promptName prompts the user for a valid project name if not provided and validates the input for disallowed characters.
 func promptName(name string) (string, error) {
 	var err error
 
-	validate := func(input string) error {
-		chars := "!@#*+$&%\\/=~ \t\n"
-
-		contains := strings.ContainsAny(input, chars)
-		if contains {
-			return fmt.Errorf("invalid name containers: %s", chars)
-		}
-		return nil
-	}
-
 	if name == "" {
 		prompt := promptui.Prompt{
 			Label:    "Name",
-			Validate: validate,
+			Validate: ValidateName,
 		}
 
 		name, err = prompt.Run()
@@ -163,7 +174,7 @@ func promptName(name string) (string, error) {
 			return "", fmt.Errorf("Prompt failed %v\n", err)
 		}
 	} else {
-		return name, validate(name)
+		return name, ValidateName(name)
 	}
 
 	return name, nil
@@ -296,8 +307,16 @@ func NewProject(args map[string]string) *Project {
 	projectUrl := args["url"]
 	dest := args["dest"]
 	command := args["command"]
+	alias := args["alias"]
 	var err error
 	name, err = promptName(name)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+	if alias == "" {
+		alias = name
+	}
+	err = ValidateName(alias)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
@@ -318,5 +337,6 @@ func NewProject(args map[string]string) *Project {
 		URL:                  projectUrl,
 		DestinationDirectory: dest,
 		DefaultCommand:       command,
+		CommandAlias:         alias,
 	}
 }

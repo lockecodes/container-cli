@@ -9,4 +9,5 @@ type ProjectConfig struct {
 	BuildDirectory string `koanf:"buildDirectory"`
 	BuildContext   string `koanf:"buildContext"`
 	DefaultCommand string `koanf:"defaultCommand"`
+	CommandAlias   string `koanf:"commandAlias"`
 }

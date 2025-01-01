@@ -51,10 +51,26 @@ func main() {
 						Usage:     "Install or update a new project",
 						UsageText: "ccli project install",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "name"},
-							&cli.StringFlag{Name: "url"},
-							&cli.StringFlag{Name: "dest"},
-							&cli.StringFlag{Name: "command"},
+							&cli.StringFlag{
+								Name:  "name",
+								Usage: "name of the project",
+							},
+							&cli.StringFlag{
+								Name:  "url",
+								Usage: "Git url for the repository. E.g. ssh://git@gitlab.com/locke-codes/container-cli.git",
+							},
+							&cli.StringFlag{
+								Name:  "dest",
+								Usage: "destination directory for the project. E.g. ~/.local/share",
+							},
+							&cli.StringFlag{
+								Name:  "command",
+								Usage: "Default command to execute inside the container. E.g. 'bash'",
+							},
+							&cli.StringFlag{
+								Name:  "alias",
+								Usage: "Local command alias. E.g. 'bs' for 'big-salad' or 'hello' for 'hello-world",
+							},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							args := map[string]string{
@@ -62,6 +78,7 @@ func main() {
 								"url":     cmd.String("url"),
 								"dest":    cmd.String("dest"),
 								"command": cmd.String("command"),
+								"alias":   cmd.String("alias"),
 							}
 							project := install.NewProject(args)
 							fmt.Printf("Installing project: %s\nFrom url: %s\nTo directory: %s\n", project.Name, project.URL, project.DestinationDirectory)

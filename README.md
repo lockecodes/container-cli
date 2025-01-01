@@ -30,14 +30,25 @@ This document will provide steps on installing, using, and maintaining this CLI 
 
 1. Run the following command to install a project:
    ```bash
-   ccli project install -name <project_name> -url <git_url> -dest <destination_path> -command <command_alias>
+   ccli project install \
+    --name <project_name> \
+    --url <git_url> \
+    --dest <destination_path> \
+    --command <default_command> \
+    --alias <command_alias>
    ```
 
    Example:
    ```bash
-   ccli project install -name big-salad -url ssh://git@gitlab.com/locke-codes/big-salad.git -dest /home/user/projects -command bs
+   ccli project install \
+    --name big-salad \
+    --url ssh://git@gitlab.com/locke-codes/big-salad.git \
+    --dest ~/.local/share \
+    --command bs \
+    --alias bs
    ```
-2. Replace `<project_name>`, `<git_url>`, `<destination_path>`, and `<command>` with appropriate values.
+2. Replace `<project_name>`, `<git_url>`, `<destination_path>`, `<default_command>`, `<command_alias>` with appropriate values.
+3. Run the command using the command alias like: `bs --help`. NOTE: If you do not pass the alias flag the command will default to the project name
 
 ### Interactive Mode for Installing a New Project
 
