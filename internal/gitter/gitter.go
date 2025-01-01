@@ -1,8 +1,10 @@
 package gitter
 
 import (
-	"github.com/hashicorp/go-getter"
 	"net/url"
+	"os"
+
+	"github.com/hashicorp/go-getter"
 )
 
 // Gitter represents a structure for managing Git operations with a repository URL and destination path.
@@ -30,7 +32,12 @@ func NewGitter(name, gitUrl, destination string) *Gitter {
 
 // Clone retrieves the repository from the configured URL and stores it in the destination directory.
 func (g *Gitter) Clone() error {
-	err := g._client.Get(g.Destination, g.Url)
+	var err error
+	err = os.RemoveAll(g.Destination)
+	if err != nil {
+		println(err)
+	}
+	err = g._client.Get(g.Destination, g.Url)
 	if err != nil {
 		return err
 	}

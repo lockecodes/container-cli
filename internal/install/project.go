@@ -2,16 +2,17 @@ package install
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"path"
+	"strings"
+
 	"github.com/manifoldco/promptui"
 	"gitlab.com/locke-codes/container-cli/internal/config"
 	"gitlab.com/locke-codes/container-cli/internal/container"
 	"gitlab.com/locke-codes/container-cli/internal/gitter"
 	"gitlab.com/locke-codes/container-cli/internal/globals"
 	"gitlab.com/locke-codes/container-cli/internal/utils"
-	"net/url"
-	"os"
-	"path"
-	"strings"
 )
 
 // Project represents a project with a name, URL, destination directory, and a default command.
@@ -79,7 +80,7 @@ func (p *Project) InstallScript() error {
 		BuildContext:   p.Path(),
 		DefaultCommand: p.DefaultCommand,
 	}
-	containerObj := container.NewPodman(&projectConfig)
+	containerObj := container.NewContainer(&projectConfig)
 	runCmd := containerObj.GetRunCommand()
 	commandStr := fmt.Sprintf("podman %s", strings.Join(runCmd, " "))
 	// File contents
@@ -108,8 +109,15 @@ func (p *Project) InstallScript() error {
 // InstallConfig installs or updates the project configuration in the container CLI configuration file.
 func (p *Project) InstallConfig() error {
 	fmt.Printf("Installing config for %s\n", p.Name)
-	configFile := config.NewContainerCliConfig()
+	engine, err := config.GetContainerEngineFromConfig()
+	if err != nil {
+		return fmt.Errorf("error getting container engine: %w", err)
+	}
+	configFile := config.NewContainerCliConfig(engine)
 	err = configFile.LoadConfig()
+	if err != nil {
+		return err
+	}
 	existingProject := configFile.GetProject(p.Name)
 	projectConfig := config.ProjectConfig{
 		Name:           p.Name,
@@ -130,7 +138,7 @@ func (p *Project) InstallConfig() error {
 		}
 	}
 	configFile.KoanfLoad()
-	err := configFile.SaveConfig()
+	err = configFile.SaveConfig()
 	if err != nil {
 		return err
 	}
@@ -289,6 +297,8 @@ func promptDestination(dest string) (string, error) {
 			if err != nil {
 				return "", fmt.Errorf("Failed to expand path %v\n", err)
 			}
+		} else {
+			dest = result
 		}
 		if err != nil {
 			return "", fmt.Errorf("Prompt failed %v\n", err)

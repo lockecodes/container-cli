@@ -2,13 +2,14 @@ package config
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/structs"
 	"gitlab.com/locke-codes/container-cli/internal/globals"
 	"gitlab.com/locke-codes/container-cli/internal/utils"
-	"log"
 )
 
 // ContainerCliConfig represents the configuration for the container CLI, including engine, path, and project details.
@@ -27,14 +28,42 @@ var (
 
 // NewContainerCliConfig initializes a default configuration for the container CLI and loads the default settings
 // directly into koanf
-func NewContainerCliConfig() *ContainerCliConfig {
+func NewContainerCliConfig(engine string) *ContainerCliConfig {
 	configFile := ContainerCliConfig{
-		ContainerEngine: "podman",
+		ContainerEngine: engine,
 		Path:            globals.DefaultContainerCliConfigPath,
 		Projects:        []ProjectConfig{},
 	}
 	configFile.KoanfLoad()
 	return &configFile
+}
+
+// LoadConfig loads a container CLI configuration file into a ContainerCliConfig instance and returns it or an error.
+func LoadConfig() (*ContainerCliConfig, error) {
+	if !utils.FileExists(globals.DefaultContainerCliConfigPath) {
+		return nil, fmt.Errorf("config file not found")
+	}
+	configFile := ContainerCliConfig{
+		Path: globals.DefaultContainerCliConfigPath,
+	}
+	err := configFile.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+	return &configFile, nil
+}
+
+// GetContainerEngineFromConfig retrieves the container engine from the configuration file or returns an error if not set.
+func GetContainerEngineFromConfig() (string, error) {
+	configFile, err := LoadConfig()
+	if err != nil {
+		return "", err
+	}
+	fmt.Printf("Container engine: %s\n", configFile.ContainerEngine)
+	if configFile.ContainerEngine == "" {
+		return "", fmt.Errorf("containerEngine not set")
+	}
+	return configFile.ContainerEngine, nil
 }
 
 // KoanfLoad loads the ContainerCliConfig struct into the global koanf instance using the "koanf" struct tags.

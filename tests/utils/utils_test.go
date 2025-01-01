@@ -4,6 +4,8 @@ import (
 	"os"
 	"reflect"
 	"testing"
+
+	"gitlab.com/locke-codes/container-cli/internal/utils"
 )
 
 func TestExpandPath(t *testing.T) {
@@ -28,7 +30,7 @@ func TestExpandPath(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			out, err := ExpandPath(test.input)
+			out, err := utils.ExpandPath(test.input)
 			if err != nil && !test.hasError {
 				t.Fatalf("Unexpected error: %+v", err)
 			}

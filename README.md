@@ -122,9 +122,15 @@ Below are some of the primary commands for `ccli`:
 | `project` | Manage projects (install, remove, etc.).       |
 | `help`    | Shows help for commands or a list of commands. |
 
+## Development
+#### Dependencies
+* golangci-lint
+* pre-commit
+
+Once pre-commit is installed run `pre-commit install-hooks`
+
 ## TODO
 
-1. Add support for Docker and refactor calls currently specific to Podman.
-2. Add Makefile targets for usage during ci/cd to run tests etc. Bring back Dockerfile was it is useful
-3. Add more complete unit testing 
-4. Create and include a usage demonstration video.
+1. Add Makefile targets for usage during ci/cd to run tests etc. Bring back Dockerfile was it is useful
+2. Add more complete unit testing
+3. Create and include a usage demonstration video.

@@ -3,14 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/urfave/cli/v3"
-	"gitlab.com/locke-codes/container-cli/internal/globals"
-	"gitlab.com/locke-codes/container-cli/internal/install"
-	"gitlab.com/locke-codes/container-cli/internal/run"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
+
+	"github.com/urfave/cli/v3"
+	"gitlab.com/locke-codes/container-cli/internal/install"
 )
 
 // version will be set during build
@@ -25,26 +22,26 @@ func main() {
 			{
 				Name:  "install",
 				Usage: "ContainerCLI the ccli binary",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "engine",
+						Usage: "container engine to use. E.g. docker, podman,",
+					},
+					&cli.BoolFlag{
+						Name:  "force",
+						Usage: "If set, if the config file already exists, it will be overwritten.",
+						Value: false,
+					},
+				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return install.ContainerCLI()
+					return install.ContainerCLIInstall(cmd.String("engine"), cmd.Bool("force"))
 				},
 			},
 			{
 				Name:  "update",
 				Usage: "Update to the latest version of the CLI",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					err := install.ContainerCLI()
-					if err != nil {
-						return err
-					}
-					ccliPath := filepath.Join(globals.HomeDir, ".local", "bin", "ccli")
-					// Execute the command
-					command := exec.Command(ccliPath, "version")
-					command.Stdout = os.Stdout
-					command.Stderr = os.Stderr
-
-					// Run the command
-					err = command.Run()
+					err := install.ContainerCLIUpdate()
 					if err != nil {
 						return err
 					}
@@ -104,17 +101,6 @@ func main() {
 							if err != nil {
 								panic(err)
 							}
-							return nil
-						},
-					},
-					{
-						Name:      "run",
-						Usage:     "Run the project container",
-						UsageText: "ccli project run",
-						Action: func(ctx context.Context, cmd *cli.Command) error {
-							projectName := cmd.Args().First()
-							args := cmd.Args().Tail()
-							run.Run(projectName, args)
 							return nil
 						},
 					},
