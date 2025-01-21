@@ -67,7 +67,29 @@ func (p *Project) Install() error {
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
+	err = p.BuildContainer()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
 	return err
+}
+
+// BuildContainer Build the project dockerfile
+func (p *Project) BuildContainer() error {
+	projectConfig := config.ProjectConfig{
+		Name:           p.Name,
+		Path:           p.Path(),
+		Dockerfile:     path.Join(p.Path(), "Dockerfile"),
+		BuildDirectory: p.Path(),
+		BuildContext:   p.Path(),
+		DefaultCommand: p.DefaultCommand,
+	}
+	containerObj := container.NewContainer(&projectConfig)
+	err := containerObj.Build()
+	if err != nil {
+		return fmt.Errorf("error building container: %v", err)
+	}
+	return nil
 }
 
 // InstallScript creates and installs an executable script for the project in the user's local bin directory.

@@ -1,9 +1,11 @@
 package container
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 
 	"gitlab.com/locke-codes/container-cli/internal/config"
@@ -68,6 +70,59 @@ func (p Container) GetRunCommand() []string {
 	fmt.Println("Generated Command:", commandStr)
 
 	return cmdArgs
+}
+
+// Build builds a Podman image using the specified Dockerfile, image name, and build context.
+func (p Container) Build() error {
+	// build using shell for now
+	// come back and use go for this later...maybe...
+	err := buildImageUsingShell(p.ContainerEngine, p.Dockerfile, p.ImageName, p.BuildContext)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// buildImageUsingShell performs a Podman build by invoking the host shell.
+func buildImageUsingShell(engine, dockerfilePath, imageName, contextDir string) error {
+	// Construct the command arguments for `podman build`
+	cmdArgs := []string{
+		"build",
+		"-f", dockerfilePath, // Specify the Dockerfile path
+		"-t", imageName, // Assign the tag to the image
+		contextDir, // Set the build context (working directory)
+	}
+
+	// Create a new Podman build command
+	cmd := exec.Command(engine, cmdArgs...)
+
+	// Capture the standard output and standard error
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Set the working directory to the context directory
+	cmd.Dir = contextDir
+
+	// Execute the Podman command
+	log.Printf("Running command: podman %v\n", cmdArgs)
+	err := cmd.Run()
+
+	// Print any standard output and error
+	if stdout.Len() > 0 {
+		fmt.Printf("Output:\n%s\n", stdout.String())
+	}
+	if stderr.Len() > 0 {
+		fmt.Printf("Error Output:\n%s\n", stderr.String())
+	}
+
+	// Check for errors in running the command
+	if err != nil {
+		return fmt.Errorf("failed to execute podman build: %w", err)
+	}
+
+	log.Println("Podman image built successfully!")
+	return nil
 }
 
 // NewContainer initializes and returns a Container object configured with the given project settings.
