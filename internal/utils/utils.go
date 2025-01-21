@@ -25,8 +25,12 @@ func ExpandPath(path string) (string, error) {
 
 // WriteToFile writes a byte slice to a file
 func WriteToFile(filePath string, data []byte) error {
-	base := filepath.Base(filePath)
-	_ = MkdirP(base)
+	var err error
+	base := filepath.Dir(filePath)
+	err = MkdirP(base)
+	if err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
 	// Create or open the file for writing
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -47,6 +51,7 @@ func WriteToFile(filePath string, data []byte) error {
 func MkdirP(path string) error {
 	// os.MkdirAll creates the directory along with any necessary parents if they don't exist.
 	// If the directory already exists, it does nothing and does not return an error.
+	fmt.Printf("Creating directory path: %s\n", path)
 	err := os.MkdirAll(path, os.ModePerm) // os.ModePerm sets permissions to 0777
 	if err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", path, err)
